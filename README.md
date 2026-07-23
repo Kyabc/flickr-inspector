@@ -1,75 +1,178 @@
-# Nuxt Minimal Starter
+# Flickr Inspector
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+🔗 ./README.en.md
 
-## Setup
+Flickr APIから取得した写真データを、ブラウザ上で手軽に確認・可視化するためのWebアプリです。
 
-Make sure to install dependencies:
+JSON Linesファイルを選択すると、投稿数、重複、日時、タグ、投稿地点などを集計します。ファイルは外部サーバーへ送信せず、ブラウザ内で処理します。
+
+## 主な機能
+
+- 複数のJSON Linesファイルの読み込み
+- ファイルごとの投稿件数とグラフ表示
+- 総投稿数とユニーク投稿数
+- ユニーク投稿者数
+- 重複した投稿IDの検出
+- JSONとして読み込めない行の検出
+- 位置情報やタグがある投稿の割合
+- 月別・年別の投稿数
+- 曜日・時間帯ごとの投稿数
+- 頻出タグの表示
+- 投稿地点のヒートマップと地点表示
+- タイムゾーンの切り替え
+- 投稿日と撮影日の切り替え
+- 日本語と英語の表示切り替え
+- 集計結果のHTMLレポート保存
+
+## 対応するファイル
+
+次の拡張子に対応しています。
+
+- `.jsonl`
+- `.ndjson`
+- `.jsonlines`
+
+文字コードはUTF-8を想定しています。
+
+各行には、1件の投稿を表すJSONオブジェクトを記述します。ファイル全体を配列として囲む必要はなく、行の間にカンマも入れません。
+
+```jsonl
+{"id":"49305147722","owner":"12345678@N00","owner_name":"example","date_upload":"1577804437","date_taken":"2020-01-01 12:30:00","lat":"35.681750","lon":"139.764388","tags":"tokyo station"}
+{"id":"49304609773","owner":"12345678@N00","owner_name":"example","date_upload":"1577806629","date_taken":"2020-01-01 13:00:00","lat":"35.658305","lon":"139.703111","tags":""}
+```
+
+## 認識する項目
+
+Flickr Inspectorは、次のキーが存在する場合に対応する集計を行います。
+
+- `id`: ユニーク投稿数と重複の確認
+- `owner`: ユニーク投稿者数
+- `owner_name`: `owner`がない場合のユニーク投稿者数
+- `date_upload`: 投稿日による期間、月別、曜日、時間帯の集計
+- `date_taken`: 撮影日による期間、月別、曜日、時間帯の集計
+- `lat`: 投稿地点の緯度
+- `lon`: 投稿地点の経度
+- `tags`: タグの有無と頻出タグ
+
+これらのキーはすべて必須ではありません。Flickr APIの`extras`で取得していない項目がある場合、その項目を使う集計は「未取得」と表示されます。
+
+ユニーク投稿者数には`owner`を優先して使用します。`owner`がなく`owner_name`がある場合は、`owner_name`を使用します。
+
+## 日時の扱い
+
+### 投稿日
+
+`date_upload`は、Unixタイムスタンプを秒単位で指定した文字列または数値として扱います。
+
+```json
+{
+  "date_upload": "1577804437"
+}
+```
+
+画面で選択したタイムゾーンを、期間、月別、曜日別、時間帯別の集計に反映します。
+
+### 撮影日
+
+`date_taken`は、次のような形式を想定しています。
+
+```json
+{
+  "date_taken": "2020-01-01 12:30:00"
+}
+```
+
+撮影日時にタイムゾーン情報が含まれていない場合は、ファイルに記録された年月日と時刻をそのまま使用します。
+
+## 地図表示
+
+位置情報がある投稿は、セル単位でまとめて地図へ表示します。
+
+選択できるセルサイズは次のとおりです。
+
+- 約30m
+- 約50m
+- 約100m
+- 約200m
+- 約500m
+
+セルサイズの距離は東京付近でのおおよその値です。緯度によって、経度方向の実際の距離は変わります。
+
+地図へ表示する地点数には上限を設定できます。地点数が上限を超えた場合は、投稿数が多い地点を優先して表示します。背景地図の表示にはインターネット接続が必要です。
+
+## HTMLレポート
+
+現在の集計結果を、単独で開けるHTMLファイルとして保存できます。
+
+レポートには次の情報が含まれます。
+
+- 概要
+- 投稿期間
+- 月ごとの投稿数
+- 頻出タグ
+- ファイルごとの件数
+- 使用した日時の基準
+- タイムゾーン
+
+地図と元の投稿データはHTMLレポートへ含まれません。レポートの言語は、保存時に選択されている日本語または英語に合わせて切り替わります。
+
+---
+
+## ビルド
+### 環境
+
+- Node.js 22以上
+- npm
+
+主な使用技術はNuxt 4、Vue 3、TypeScript、Chart.js、Leaflet、Leaflet.heatです。
+
+### セットアップ
+
+リポジトリを取得します。
 
 ```bash
-# npm
+git clone https://github.com/YOUR_USERNAME/flickr-inspector.git
+cd flickr-inspector
+```
+
+依存パッケージをインストールします。
+
+```bash
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+開発用サーバーを起動します。
 
 ```bash
-# npm
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+通常は次のURLで確認できます。
 
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+```text
+http://localhost:3000/
 ```
 
-Locally preview production build:
+---
 
-```bash
-# npm
-npm run preview
+## プライバシー
 
-# pnpm
-pnpm preview
+選択したJSON Linesファイルは、外部サーバーへ送信しません。読み込み、集計、可視化はブラウザ内で行います。
 
-# yarn
-yarn preview
+ただし、地図の背景画像はOpenStreetMapの配信サーバーから取得します。
 
-# bun
-bun run preview
-```
+## 注意事項
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+- 大きなファイルを処理すると、端末やブラウザによって時間がかかる場合があります。
+- 地点数を増やすと、地図の描画が重くなる場合があります。
+- Flickr Inspectorは、入力データの内容や正確性を保証するものではありません。
+- 集計結果は、研究へ利用する前に元データや取得条件と照合してください。
+- FlickrおよびFlickr APIの利用条件を確認したうえで使用してください。
+
+## AI利用に関する表示
+
+このプロジェクトは、AIによる支援を受けて開発されました。
+
+Developed with M365 Copilot, based on the GPT-5 reasoning model.
+
+生成されたコードや文書には誤りが含まれる可能性があります。利用前に内容を確認し、十分な動作検証を行ってください。
