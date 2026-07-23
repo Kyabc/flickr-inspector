@@ -7,10 +7,13 @@ import TimeHeatmap from './components/TimeHeatmap.vue'
 import type { TimeBasis } from './composables/useFileParser'
 import ReportExport from './components/ReportExport.vue'
 import TimelineChart from './components/TimelineChart.vue'
+import SampleDataHelp from './components/SampleDataHelp.vue'
 
 const selectedFiles = ref<FileReadResult[]>([])
 const fileInput = ref<HTMLInputElement | null>(null)
 const isReading = ref(false)
+const isSampleReading = ref(false)
+const isSampleHelpOpen = ref(false)
 const { summary, timeZone, timeBasis, browserTimeZone, readFiles, resetSummary, setTimeZone, setTimeBasis } = useFileParser()
 function hasField(field: keyof typeof summary.availableFields): boolean { return summary.availableFields[field] }
 
@@ -27,11 +30,8 @@ const timeZoneOptions = computed(() => {
   return options.filter((option, index) => options.findIndex(item => item.value === option.value) === index)
 })
 
-async function handleFileChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  if (!input.files || input.files.length === 0) return
-  const files = Array.from(input.files)
-  selectedFiles.value = files.map((file, index) => ({
+function createFileResults(files: File[]): FileReadResult[] {
+  return files.map((file, index) => ({
     id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
     name: file.name,
     size: file.size,
@@ -41,9 +41,36 @@ async function handleFileChange(event: Event) {
     duplicateCount: 0,
     status: '待機中',
   }))
+}
+
+async function processFiles(files: File[]): Promise<void> {
+  selectedFiles.value = createFileResults(files)
   isReading.value = true
   try { await readFiles(files, selectedFiles.value) }
   finally { isReading.value = false }
+}
+
+async function handleFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  if (!input.files || input.files.length === 0) return
+  await processFiles(Array.from(input.files))
+}
+
+async function loadSample(): Promise<void> {
+  isSampleReading.value = true
+  try {
+    const config = useRuntimeConfig()
+    const response = await fetch(`${config.app.baseURL}samples/flickr-sample.jsonl`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const content = await response.text()
+    const file = new File([content], 'flickr-sample.jsonl', { type: 'application/jsonl' })
+    await processFiles([file])
+  } catch (error) {
+    console.error(error)
+    window.alert(t('sampleError'))
+  } finally {
+    isSampleReading.value = false
+  }
 }
 
 function handleTimeZoneChange(event: Event) { setTimeZone((event.target as HTMLSelectElement).value) }
@@ -93,7 +120,11 @@ function statusLabel(status: FileReadResult['status']) { return status === '完�
     <main class="main">
       <section class="upload-panel">
         <div><h2>{{ t('loadFiles') }}</h2><p>{{ t('loadDescription') }}</p></div>
-        <label class="file-button" :class="{ disabled: isReading }">{{ isReading ? t('reading') : t('chooseFiles') }}<input ref="fileInput" class="file-input" type="file" accept=".jsonl,.ndjson,.jsonlines,application/jsonl,application/x-ndjson" multiple :disabled="isReading" @change="handleFileChange"></label>
+        <div class="upload-actions">
+          <label class="file-button" :class="{ disabled: isReading }">{{ isReading && !isSampleReading ? t('reading') : t('chooseFiles') }}<input ref="fileInput" class="file-input" type="file" accept=".jsonl,.ndjson,.jsonlines,application/jsonl,application/x-ndjson" multiple :disabled="isReading" @change="handleFileChange"></label>
+          <button type="button" class="sample-button" :disabled="isReading" @click="loadSample">{{ isSampleReading ? t('sampleLoading') : t('sampleLoad') }}</button>
+          <button type="button" class="format-button" @click="isSampleHelpOpen = true">{{ t('sampleFormat') }}</button>
+        </div>
       </section>
 
       <section v-if="selectedFiles.length" class="result-panel">
@@ -145,9 +176,10 @@ function statusLabel(status: FileReadResult['status']) { return status === '完�
       </section>
       <section v-else class="empty"><p>{{ t('noFiles') }}</p><small>{{ t('supported') }}</small></section>
     </main>
+    <SampleDataHelp v-if="isSampleHelpOpen" @close="isSampleHelpOpen = false" />
   </div>
 </template>
 
 <style>
-*{box-sizing:border-box}body{margin:0;color:#1f2937;background:#f5f7fa;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}.app{min-height:100vh}.header{padding:64px 24px 48px;color:#fff;background:#172554}.header__content{width:min(1040px,100%);margin:auto}.header__top{display:flex;align-items:center;justify-content:space-between;gap:20px}.language-switch{display:flex;padding:3px;border:1px solid rgb(191 219 254 / 55%);border-radius:9px;background:rgb(15 23 42 / 22%)}.language-switch button{min-width:42px;padding:7px 10px;border:0;border-radius:6px;color:#dbeafe;background:transparent;font-weight:700;cursor:pointer}.language-switch button.active{color:#172554;background:#fff}.header__label{margin:0 0 8px;color:#bfdbfe;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.header h1{margin:0;font-size:clamp(36px,6vw,56px)}.header__description{max-width:680px;margin:16px 0 0;color:#dbeafe;line-height:1.7}.main{display:grid;gap:24px;width:min(1040px,calc(100% - 32px));margin:-24px auto 0;padding-bottom:64px}.upload-panel,.result-panel,.empty{border:1px solid #e5e7eb;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgb(15 23 42 / 8%)}.upload-panel{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:28px}.upload-panel h2,.result-header h2{margin:0}.upload-panel p,.result-header p{margin:8px 0 0;color:#64748b;line-height:1.6}.file-button{flex-shrink:0;padding:12px 20px;border-radius:10px;color:#fff;background:#2563eb;font-weight:700;cursor:pointer}.file-button.disabled{opacity:.6}.file-input{display:none}.result-panel{padding:28px}.result-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:28px}.result-actions{display:flex;align-items:flex-end;gap:10px}.result-actions label{display:grid;gap:5px;color:#475569;font-size:12px}.result-actions select,.result-header button{min-height:38px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.result-header button{cursor:pointer}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.summary-grid article{display:grid;align-content:start;gap:8px;min-height:118px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.summary-grid article.warning{border-color:#fcd34d;background:#fffbeb}.summary-grid article.error{border-color:#fca5a5;background:#fef2f2}.summary-grid span,.summary-grid small,.period span{color:#64748b;font-size:13px}.summary-grid strong{font-size:26px}.summary-grid strong.not-available,.period strong.not-available{color:#64748b;font-size:15px}.period{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:12px;padding:18px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.period>div{display:grid;gap:4px}.period small{color:#64748b;font-size:12px}.notice{margin-top:28px;padding:18px;border:1px solid #fde68a;border-radius:10px;background:#fffbeb}.notice h3,.files h3{margin:0 0 16px;font-size:17px}.notice ul{display:grid;gap:8px;margin:0;padding-left:22px;color:#78350f}.files{margin-top:28px}.files ul{display:grid;gap:10px;margin:0;padding:0;list-style:none}.files li{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px;border:1px solid #e2e8f0;border-radius:10px}.files p{margin:5px 0 0;color:#64748b;font-size:13px}.files .warn{color:#b45309}.files .err{color:#b91c1c}.files aside{display:grid;flex-shrink:0;justify-items:end;gap:6px}.files aside span{padding:4px 9px;border-radius:999px;background:#e2e8f0;font-size:12px;font-weight:700}.files aside span.完了{color:#166534;background:#dcfce7}.files aside span.読込中{color:#1d4ed8;background:#dbeafe}.files aside span.エラー{color:#b91c1c;background:#fee2e2}.map-fallback{margin-top:28px;padding:80px;border:1px dashed #cbd5e1;border-radius:10px;color:#64748b;text-align:center}.empty{padding:40px;text-align:center;color:#64748b}.empty p{margin:0}.empty small{display:block;margin-top:8px}@media(max-width:840px){.summary-grid{grid-template-columns:repeat(2,1fr)}.result-header{flex-direction:column}.result-actions{width:100%}}@media(max-width:640px){.upload-panel,.period,.files li{align-items:stretch;flex-direction:column}.file-button{text-align:center}.result-actions{align-items:stretch;flex-direction:column}.files aside{justify-items:start}}@media(max-width:440px){.summary-grid{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{margin:0;color:#1f2937;background:#f5f7fa;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit}.app{min-height:100vh}.header{padding:64px 24px 48px;color:#fff;background:#172554}.header__content{width:min(1040px,100%);margin:auto}.header__top{display:flex;align-items:center;justify-content:space-between;gap:20px}.language-switch{display:flex;padding:3px;border:1px solid rgb(191 219 254 / 55%);border-radius:9px;background:rgb(15 23 42 / 22%)}.language-switch button{min-width:42px;padding:7px 10px;border:0;border-radius:6px;color:#dbeafe;background:transparent;font-weight:700;cursor:pointer}.language-switch button.active{color:#172554;background:#fff}.header__label{margin:0 0 8px;color:#bfdbfe;font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.header h1{margin:0;font-size:clamp(36px,6vw,56px)}.header__description{max-width:680px;margin:16px 0 0;color:#dbeafe;line-height:1.7}.main{display:grid;gap:24px;width:min(1040px,calc(100% - 32px));margin:-24px auto 0;padding-bottom:64px}.upload-panel,.result-panel,.empty{border:1px solid #e5e7eb;border-radius:16px;background:#fff;box-shadow:0 8px 24px rgb(15 23 42 / 8%)}.upload-panel{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:28px}.upload-panel h2,.result-header h2{margin:0}.upload-panel p,.result-header p{margin:8px 0 0;color:#64748b;line-height:1.6}.upload-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px}.file-button{flex-shrink:0;padding:12px 20px;border-radius:10px;color:#fff;background:#2563eb;font-weight:700;cursor:pointer}.file-button.disabled{opacity:.6}.sample-button,.format-button{padding:11px 15px;border-radius:9px;font-weight:700;cursor:pointer}.sample-button{border:1px solid #2563eb;color:#1d4ed8;background:#eff6ff}.format-button{border:1px solid #cbd5e1;color:#475569;background:#fff}.sample-button:disabled{cursor:not-allowed;opacity:.6}.file-input{display:none}.result-panel{padding:28px}.result-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:28px}.result-actions{display:flex;align-items:flex-end;gap:10px}.result-actions label{display:grid;gap:5px;color:#475569;font-size:12px}.result-actions select,.result-header button{min-height:38px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}.result-header button{cursor:pointer}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.summary-grid article{display:grid;align-content:start;gap:8px;min-height:118px;padding:16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.summary-grid article.warning{border-color:#fcd34d;background:#fffbeb}.summary-grid article.error{border-color:#fca5a5;background:#fef2f2}.summary-grid span,.summary-grid small,.period span{color:#64748b;font-size:13px}.summary-grid strong{font-size:26px}.summary-grid strong.not-available,.period strong.not-available{color:#64748b;font-size:15px}.period{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:12px;padding:18px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.period>div{display:grid;gap:4px}.period small{color:#64748b;font-size:12px}.notice{margin-top:28px;padding:18px;border:1px solid #fde68a;border-radius:10px;background:#fffbeb}.notice h3,.files h3{margin:0 0 16px;font-size:17px}.notice ul{display:grid;gap:8px;margin:0;padding-left:22px;color:#78350f}.files{margin-top:28px}.files ul{display:grid;gap:10px;margin:0;padding:0;list-style:none}.files li{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:16px;border:1px solid #e2e8f0;border-radius:10px}.files p{margin:5px 0 0;color:#64748b;font-size:13px}.files .warn{color:#b45309}.files .err{color:#b91c1c}.files aside{display:grid;flex-shrink:0;justify-items:end;gap:6px}.files aside span{padding:4px 9px;border-radius:999px;background:#e2e8f0;font-size:12px;font-weight:700}.files aside span.完了{color:#166534;background:#dcfce7}.files aside span.読込中{color:#1d4ed8;background:#dbeafe}.files aside span.エラー{color:#b91c1c;background:#fee2e2}.map-fallback{margin-top:28px;padding:80px;border:1px dashed #cbd5e1;border-radius:10px;color:#64748b;text-align:center}.empty{padding:40px;text-align:center;color:#64748b}.empty p{margin:0}.empty small{display:block;margin-top:8px}@media(max-width:840px){.summary-grid{grid-template-columns:repeat(2,1fr)}.result-header{flex-direction:column}.result-actions{width:100%}}@media(max-width:640px){.upload-panel,.period,.files li{align-items:stretch;flex-direction:column}.upload-actions{align-items:stretch;flex-direction:column}.file-button{text-align:center}.result-actions{align-items:stretch;flex-direction:column}.files aside{justify-items:start}}@media(max-width:440px){.summary-grid{grid-template-columns:1fr}}
 </style>

@@ -3,7 +3,7 @@ export type AppLocale = 'ja' | 'en'
 const messages = {
   ja: {
     subtitle: 'クロールしたFlickrデータの件数や不足、重複、投稿傾向を確認します。',
-    loadFiles: 'ファイルを読み込む', loadDescription: 'JSON Linesファイルを複数選択できます。ファイルは外部へ送信せず、ブラウザ内で処理します。',
+    loadFiles: 'ファイルを読み込む', sampleLoad: 'サンプルを読み込む', sampleLoading: 'サンプル読込中...', sampleFormat: '形式を見る', sampleTitle: '対応するJSON Lines形式', sampleIntro: '1行につき1件のJSONオブジェクトを記述します。ファイル全体を配列で囲まず、行の間にカンマを入れません。', sampleFields: '主に認識する項目', sampleSynthetic: 'サンプル内の投稿ID、投稿者、日時、タグ、位置情報は、動作確認用に作成した架空のデータです。', sampleDownload: 'サンプルをダウンロード', close: '閉じる', sampleError: 'サンプルデータを読み込めませんでした。', loadDescription: 'JSON Linesファイルを複数選択できます。ファイルは外部へ送信せず、ブラウザ内で処理します。',
     chooseFiles: 'ファイルを選択', reading: '読み込み中...', results: '読み込み結果', processing: 'ファイルを順番に処理しています。', filesChecked: '{count}個のファイルを確認しました。',
     timeBasis: '時間の基準', uploadDate: '投稿日', takenDate: '撮影日', timezone: 'タイムゾーン', clear: '選択を解除', saveReport: 'HTMLレポートを保存',
     fileCount: 'ファイル数', totalPosts: '総投稿数', uniquePosts: 'ユニーク投稿数', uniqueOwners: 'ユニーク投稿者数', locationAvailable: '位置情報あり', tagsAvailable: 'タグあり', duplicates: '重複投稿', invalidLines: '不正な行',
@@ -21,7 +21,7 @@ const messages = {
   },
   en: {
     subtitle: 'Inspect counts, missing fields, duplicates, and posting patterns in crawled Flickr data.',
-    loadFiles: 'Load files', loadDescription: 'Select multiple JSON Lines files. Files are processed locally in your browser and are not uploaded.',
+    loadFiles: 'Load files', sampleLoad: 'Load sample', sampleLoading: 'Loading sample...', sampleFormat: 'View format', sampleTitle: 'Supported JSON Lines format', sampleIntro: 'Write one JSON object per line. Do not wrap the file in an array or place commas between lines.', sampleFields: 'Main recognized fields', sampleSynthetic: 'The photo IDs, owners, dates, tags, and locations in the sample are synthetic and intended only for testing.', sampleDownload: 'Download sample', close: 'Close', sampleError: 'The sample data could not be loaded.', loadDescription: 'Select multiple JSON Lines files. Files are processed locally in your browser and are not uploaded.',
     chooseFiles: 'Choose files', reading: 'Reading...', results: 'Inspection results', processing: 'Processing files in order.', filesChecked: 'Checked {count} files.',
     timeBasis: 'Time basis', uploadDate: 'Upload date', takenDate: 'Date taken', timezone: 'Time zone', clear: 'Clear files', saveReport: 'Save HTML report',
     fileCount: 'Files', totalPosts: 'Total posts', uniquePosts: 'Unique posts', uniqueOwners: 'Unique owners', locationAvailable: 'With location', tagsAvailable: 'With tags', duplicates: 'Duplicate posts', invalidLines: 'Invalid lines',
