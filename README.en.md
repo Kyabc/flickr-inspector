@@ -1,6 +1,6 @@
 # Flickr Inspector
 
-./README.md
+🔗 [README.md](https://github.com/Kyabc/flickr-inspector/blob/main/README.md)
 
 Flickr Inspector is a browser-based application for quickly inspecting and visualizing photo data retrieved from the Flickr API.
 

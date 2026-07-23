@@ -1,6 +1,6 @@
 # Flickr Inspector
 
-🔗 ./README.en.md
+🔗 [README.en.md](https://github.com/Kyabc/flickr-inspector/blob/main/README.en.md)
 
 Flickr APIから取得した写真データを、ブラウザ上で手軽に確認・可視化するためのWebアプリです。
 
