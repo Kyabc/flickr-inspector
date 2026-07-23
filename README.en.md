@@ -34,6 +34,8 @@ The following file extensions are supported:
 
 Files are expected to use UTF-8 encoding.
 
+Regular JSON arrays and CSV files are not supported. Convert Flickr API responses to JSON Lines before loading them.
+
 Each line must contain a JSON object representing one post. Do not wrap the file in a JSON array, and do not place commas between lines.
 
 ```jsonl
